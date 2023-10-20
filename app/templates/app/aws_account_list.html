@@ -1,0 +1,14 @@
+{% extends "app/base.html" %}
+
+{% block content %}
+
+<h1>AWS Account List</h1>
+<ul>
+    {% for account in aws_accounts %}
+        <li>
+            <a href="{% url 'aws_account_detail' pk=account.pk %}">{{ account.name }}</a>
+        </li>
+    {% endfor %}
+</ul>
+
+{% endblock content %}

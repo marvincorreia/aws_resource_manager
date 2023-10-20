@@ -37,6 +37,9 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django_extensions',
+    'admin_reorder',
+    'app',
 ]
 
 MIDDLEWARE = [
@@ -47,6 +50,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'admin_reorder.middleware.ModelAdminReorder',
 ]
 
 ROOT_URLCONF = 'aws_management.urls'
@@ -123,3 +127,13 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 STATIC_ROOT = 'staticfiles'
+
+
+ADMIN_REORDER = (
+    'sites',
+    # First group
+    {'app': 'app', 'label': 'AWS Resources', 'models': ('app.AWSAccount', 'app.EC2Instance', 'app.RDSInstance')},
+    # Second group: same app, but different label
+    {'app': 'app', 'label': 'Cronjobs', 'models': ('app.CronJob', 'app.CronJobLog',)},
+    {'app': 'auth', 'models': ('auth.User', 'auth.Group')},
+)

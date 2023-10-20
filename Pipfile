@@ -6,6 +6,9 @@ name = "pypi"
 [packages]
 django = "==4.2.6"
 boto3 = "*"
+django-extensions = "*"
+python-crontab = "*"
+django-modeladmin-reorder = "*"
 
 [dev-packages]
 
