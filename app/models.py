@@ -1,6 +1,5 @@
 from django.db import models
 from django.urls import reverse
-from django.core.validators import MinValueValidator, MaxValueValidator
 from django.utils import timezone
 import uuid
 
@@ -10,10 +9,11 @@ ACTIONS = (
     ('down', 'DOWN'),
 )
 
+
 class AWSAccount(models.Model):
     name = models.CharField(max_length=20, unique=True)
     aws_access_key_id = models.CharField(max_length=50)
-    aws_secret_access_key = models.CharField(max_length=100)
+    aws_secret_access_key = models.CharField(max_length=100, help_text='This field is not visible for security reasons')
     
     def __str__(self):
         return self.name
@@ -35,12 +35,13 @@ class EC2Instance(models.Model):
     public_ip = models.GenericIPAddressField(null=True, blank=True)
     launch_time = models.DateTimeField()
     aws_account = models.ForeignKey(AWSAccount, on_delete=models.CASCADE)
-    managed = models.BooleanField(default=False)
+    managed = models.BooleanField(default=False, help_text="If selected cronjob can manage this resource")
 
     class Meta:
         verbose_name = 'AWS EC2 Instance'
         verbose_name_plural = 'AWS EC2 Instances'
         default_related_name = 'ec2_instances'
+        ordering = ['-launch_time']
 
     def __str__(self):
         return self.instance_name
@@ -48,10 +49,10 @@ class EC2Instance(models.Model):
     def get_absolute_url(self):
         return reverse("_detail", kwargs={"pk": self.pk})
     
-    def running(self):
-        return self.instance_state.lower() == "running"
+    def up(self):
+        return not self.instance_state.lower().startswith('stop')
     
-    running.boolean = True
+    up.boolean = True
 
 
 class RDSInstance(models.Model):
@@ -61,12 +62,13 @@ class RDSInstance(models.Model):
     db_instance_class = models.CharField(max_length=20)
     creation_time = models.DateTimeField()
     aws_account = models.ForeignKey(AWSAccount, on_delete=models.CASCADE)
-    managed = models.BooleanField(default=False)
+    managed = models.BooleanField(default=False, help_text="If selected cronjob can manage this resource")
 
     class Meta:
         verbose_name = 'AWS RDS Instance'
         verbose_name_plural = 'AWS RDS Instances'
         default_related_name = 'rds_instances'
+        ordering = ['-creation_time']
 
     def __str__(self):
         return self.db_identifier
@@ -74,10 +76,10 @@ class RDSInstance(models.Model):
     def get_absolute_url(self):
         return reverse("_detail", kwargs={"pk": self.pk})
     
-    def available(self):
-        return self.db_status.lower() == 'available'
+    def up(self):
+        return not self.db_status.lower().startswith('stop')
     
-    available.boolean = True
+    up.boolean = True
 
 
 class CronJob(models.Model):
@@ -117,4 +119,26 @@ class CronJobLog(models.Model):
         verbose_name_plural = 'Job Logs'
         ordering = ['-time']
 
+
+class Notification(models.Model):
+    subject = models.CharField(max_length=100)
+    aws_account = models.ForeignKey(AWSAccount, on_delete=models.CASCADE)
+    from_email = models.EmailField()
+    recipient_list = models.TextField(help_text="separated with a comma (,)")
+    server = models.CharField(max_length=50, default="smtp.gmail.com")
+    port = models.IntegerField(default=587)
+    auth_user = models.EmailField()
+    auth_password = models.CharField(max_length=100, help_text='This field is not visible for security reasons')
+    tls = models.BooleanField(default=True)
+    ssl = models.BooleanField(default=False)
+    only_failed_jobs = models.BooleanField(default=False)
+    active = models.BooleanField(default=True)
+  
+    def __str__(self):
+        return self.subject
+
+    class Meta:
+        verbose_name = 'Notification'
+        verbose_name_plural = 'Notifications'
+        default_related_name = 'notification_configs'
 
