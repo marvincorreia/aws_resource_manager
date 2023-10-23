@@ -11,6 +11,9 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 from pathlib import Path
+from os import getenv
+from django.core.management.utils import get_random_secret_key
+import json
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -20,12 +23,16 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-qc-p$#6x=v#%_26f*+d!8=!z#!a4grz4h57#4d%9t+$ferzlvd'
+SECRET_KEY = getenv('SECRET_KEY', get_random_secret_key())
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = json.loads(getenv('DEBUG', 'false'))
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
+
+
+if DEBUG:
+    SECRET_KEY = 'django-insecure-qc-p$#6x=v#%_26f*+d!8=!z#!a4grz4h57#4d%9t+$ferzlvd'
 
 
 # Application definition
@@ -38,7 +45,6 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django_extensions',
-    'admin_reorder',
     'app',
 ]
 
@@ -50,7 +56,6 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'admin_reorder.middleware.ModelAdminReorder',
 ]
 
 ROOT_URLCONF = 'aws_management.urls'
@@ -77,12 +82,24 @@ WSGI_APPLICATION = 'aws_management.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+if DEBUG:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql_psycopg2',
+            'NAME': getenv('DB_NAME'),
+            'USER': getenv('DB_USER'),
+            'PASSWORD': getenv('DB_PASSWORD'),
+            'HOST': getenv('DB_HOST', 'localhost'),   # Or an IP Address that your DB is hosted on
+            'PORT': getenv('DB_PORT', '5432'),
+        }
+    }
 
 
 # Password validation
@@ -128,12 +145,17 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 STATIC_ROOT = 'staticfiles'
 
+# Internationalization
+# https://docs.djangoproject.com/en/3.2/topics/i18n/
 
-ADMIN_REORDER = (
-    'sites',
-    # First group
-    {'app': 'app', 'label': 'AWS Resources', 'models': ('app.AWSAccount', 'app.EC2Instance', 'app.RDSInstance')},
-    # Second group: same app, but different label
-    {'app': 'app', 'label': 'Cronjobs', 'models': ('app.CronJob', 'app.CronJobLog',)},
-    {'app': 'auth', 'models': ('auth.User', 'auth.Group')},
-)
+LANGUAGE_CODE = 'en-us'
+TIME_ZONE = 'UTC'
+USE_I18N = True
+USE_L10N = True
+USE_TZ = True
+
+# DEFAULT_LOGGING['handlers']['console']['filters'] = []
+if not DEBUG:
+    CSRF_COOKIE_SECURE = True
+    SESSION_COOKIE_SECURE = True
+    SECURE_SSL_REDIRECT = True

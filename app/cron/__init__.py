@@ -1,9 +1,10 @@
 from django.conf import settings
 from app.models import CronJob
 from crontab import CronTab
+from os import getenv
 
 
-cron_user = "root"
+cron_user = getenv('CRONTAB_USER', 'root')
 PATH = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 
 

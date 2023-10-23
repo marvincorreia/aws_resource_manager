@@ -7,3 +7,7 @@ class AppConfig(AppConfig):
 
     def ready(self):
         import app.signals
+        import app.cron
+        app.cron.config()
+        
+        

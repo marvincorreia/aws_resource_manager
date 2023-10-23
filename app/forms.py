@@ -1,4 +1,4 @@
-from .models import AWSAccount, CronJob
+from .models import AWSAccount, Notification
 from django import forms
 
 
@@ -10,14 +10,11 @@ class AWSAccountForm(forms.ModelForm):
             'aws_secret_access_key': forms.PasswordInput(),
         }
 
+class NotificationForm(forms.ModelForm):
+    class Meta:
+        model = Notification
+        fields = '__all__'
+        widgets = {
+            'auth_password': forms.PasswordInput(),
+        }
 
-# class CronField(forms.CharField):
-#     widget = forms.TextInput(attrs={'placeholder': '0 6 * * 1-5'})
-
-
-# class CronAdminForm(forms.ModelForm):
-#     cron_schedule = CronField(required=False)  # Add the field name as per your model
-
-#     class Meta:
-#         model = CronJob  # Replace with your model name
-#         fields = '__all__'

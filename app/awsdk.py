@@ -1,5 +1,6 @@
 import boto3
 from . import models
+from typing import List
 
 def get_aws_ec2_instances(aws_account: models.AWSAccount):
    
@@ -89,40 +90,56 @@ def get_aws_rds_instances(aws_account: models.AWSAccount):
         # print(f"DB Identifier: {db_identifier}, Engine: {db_engine}, Status: {db_status}, Instance Class: {db_instance_class}, Creation Time: {creation_time}")
 
 
-def ec2_perform_action(aws_account: models.AWSAccount, action: str):
-    ec2 = boto3.client('ec2', 
+def ec2_perform_action(instances: List[models.EC2Instance], action: str) -> List[str]:
+
+    info = []
+
+    for i in instances:
+        ec2 = boto3.client('ec2', 
                     region_name='us-east-1',  # Replace with your desired region
-                    aws_access_key_id=aws_account.aws_access_key_id,
-                    aws_secret_access_key=aws_account.aws_secret_access_key)
-    
-    instances_ids = [x.instance_id for x in aws_account.ec2_instances.filter(managed=True)]
-    
-    if action.lower() == "up":
-        response = ec2.start_instances(InstanceIds=instances_ids, DryRun=False)
-    elif action.lower() == "down":
-        response = ec2.stop_instances(InstanceIds=instances_ids, DryRun=False)
-   
-    return response
+                    aws_access_key_id=i.aws_account.aws_access_key_id,
+                    aws_secret_access_key=i.aws_account.aws_secret_access_key)
+        
+        try:
+            if action.lower() == "up":
+                response = ec2.start_instances(InstanceIds=[i.instance_id,], DryRun=False)
+                current_state = response['StartingInstances'][0]['CurrentState']['Name']
+            elif action.lower() == "down":
+                response = ec2.stop_instances(InstanceIds=[i.instance_id,], DryRun=False)
+                current_state = response['StoppingInstances'][0]['CurrentState']['Name']
+            else:
+                pass
+
+            info.append(f"Instance: {i.instance_name} | CurrentState: {current_state}")
+            models.EC2Instance.objects.filter(pk=i.instance_id).update(instance_state=current_state)
+        except Exception as e:
+            info.append(f"Instance: {i.instance_name} | Error: {e}")
+
+    return info
 
 
-def rds_perform_action(aws_account: models.AWSAccount,  action: str):
-    rds = boto3.client('rds', 
+def rds_perform_action(instances: List[models.RDSInstance], action: str) -> List[str]:
+
+    info = []
+
+    for i in instances:
+        rds = boto3.client('rds', 
                     region_name='us-east-1',  # Replace with your desired region
-                    aws_access_key_id=aws_account.aws_access_key_id,
-                    aws_secret_access_key=aws_account.aws_secret_access_key)
-    
-    rds_instances = aws_account.rds_instances.filter(managed=True)
-    responses = []
-
-    for i in rds_instances :
+                    aws_access_key_id=i.aws_account.aws_access_key_id,
+                    aws_secret_access_key=i.aws_account.aws_secret_access_key)
+        
         try:
             if action.lower() == "up":
                 response = rds.start_db_instance(DBInstanceIdentifier=i.db_identifier)
-                responses.append(response)
             elif action.lower() == "down":
                 response = rds.stop_db_instance(DBInstanceIdentifier=i.db_identifier)
-                responses.append(response)
+            else:
+                pass
+            
+            current_state = response['DBInstance']['DBInstanceStatus']
+            info.append(f"Instance: {i.db_identifier} | DBInstanceStatus: {current_state}")
+            models.RDSInstance.objects.filter(pk=i.db_identifier).update(db_status=current_state)
         except Exception as e:
-            responses.append({'ERROR': f"{i} - {e}"})
-    
-    return responses
+            info.append(f"Instance: {i.db_identifier} | Error: {e}")
+
+    return info

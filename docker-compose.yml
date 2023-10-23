@@ -2,9 +2,13 @@ version: "3.7"
 
 services:
   server:
-    image: aws_app
-    build: .
+    image: aws_management:dev
+    build:
+      context: .
+      target: dev
     volumes:
       - ./:/app
+    environment:
+      - DEBUG=true
     ports:
       - 8000:8000

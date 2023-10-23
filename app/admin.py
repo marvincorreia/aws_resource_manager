@@ -1,7 +1,7 @@
 from django.contrib import admin, messages
 from . import models
-from .forms import AWSAccountForm
-from .awsdk import get_aws_ec2_instances, get_aws_rds_instances
+from .forms import AWSAccountForm, NotificationForm
+from .awsdk import get_aws_ec2_instances, get_aws_rds_instances, ec2_perform_action, rds_perform_action
 from . import admin_inlines
 
 
@@ -28,10 +28,19 @@ class AWSAccountAdmin(admin.ModelAdmin):
 @admin.decorators.register(models.EC2Instance)
 class EC2InstanceAdmin(admin.ModelAdmin):
     list_display = [x.name for x in models.EC2Instance._meta.fields if x.name not in ['instance_id',]]
-    list_display.insert(1, 'running')
-    list_filter = ('aws_account', 'managed')
+    list_display.insert(1, 'up')
+    list_filter = ('aws_account', 'managed', 'instance_state')
+    search_fields = [x.name for x in models.EC2Instance._meta.fields if x.name not in ['aws_account',]]
 
-    actions = ['enable_managed', 'disable_managed']
+    actions = ['start_ec2_instances', 'stop_ec2_instances', 'enable_managed', 'disable_managed']
+
+    def start_ec2_instances(self, request, queryset):
+        r = ec2_perform_action(queryset, 'up')
+        self.message_user(request, ", ".join(r), messages.INFO)
+
+    def stop_ec2_instances(self, request, queryset):
+        r = ec2_perform_action(queryset, 'down')
+        self.message_user(request, ", ".join(r), messages.INFO)
 
     def enable_managed(self, request, queryset):
         queryset.update(managed=True)
@@ -39,17 +48,27 @@ class EC2InstanceAdmin(admin.ModelAdmin):
     def disable_managed(self, request, queryset):
         queryset.update(managed=False)
 
-    enable_managed.short_description = "Enable 'managed' for selected EC2 instances"
-    disable_managed.short_description = "Disable 'managed' for selected EC2 instances"
+    start_ec2_instances.short_description = "Start selected"
+    stop_ec2_instances.short_description =  "Stop selected"
+    enable_managed.short_description = "Allow cronjob for selected (managed)"
+    disable_managed.short_description = "Disallow cronjob for selected (managed)"
 
 
 @admin.decorators.register(models.RDSInstance)
 class RDSInstanceAdmin(admin.ModelAdmin):
     list_display = [x.name for x in models.RDSInstance._meta.fields if x.name not in ['id',]]
-    list_display.insert(2, 'available')
+    list_display.insert(1, 'up')
     list_filter = ('aws_account', 'managed')
+    search_fields = [x.name for x in models.RDSInstance._meta.fields if x.name not in ['aws_account',]]
+    actions = ['start_rds_instances', 'stop_rds_instances', 'enable_managed', 'disable_managed']
 
-    actions = ['enable_managed', 'disable_managed']
+    def start_rds_instances(self, request, queryset):
+        r = rds_perform_action(queryset, 'up')
+        self.message_user(request, ", ".join(r), messages.INFO)
+
+    def stop_rds_instances(self, request, queryset):
+        r = rds_perform_action(queryset, 'down')
+        self.message_user(request, ", ".join(r), messages.INFO)
 
     def enable_managed(self, request, queryset):
         queryset.update(managed=True)
@@ -57,8 +76,10 @@ class RDSInstanceAdmin(admin.ModelAdmin):
     def disable_managed(self, request, queryset):
         queryset.update(managed=False)
 
-    enable_managed.short_description = "Enable 'managed' for selected RDS instances"
-    disable_managed.short_description = "Disable 'managed' for selected RDS instances"
+    start_rds_instances.short_description = "Start selected"
+    stop_rds_instances.short_description =  "Stop selected"
+    enable_managed.short_description = "Allow cronjob for selected (managed)"
+    disable_managed.short_description = "Disallow cronjob for selected (managed)"
 
 
 
@@ -66,26 +87,51 @@ class RDSInstanceAdmin(admin.ModelAdmin):
 class CronJobAdmin(admin.ModelAdmin):
     list_display = [x.name for x in models.CronJob._meta.fields if x.name not in ['id',]]
     list_filter = ('aws_account',)
-    inlines = [admin_inlines.CronJobLogInline,]
-    actions = ['activate', 'deactivate']
+    # inlines = [admin_inlines.CronJobLogInline,]
+    actions = ['activate', 'deactivate', 'create_copy']
+
+    def create_copy(self, request, queryset):
+        for i in queryset:
+            i.pk = None
+            i.name = f"copy of {i.name}"
+            i.active = False
+            i.save()
+            self.message_user(request, f"{i.name} created", messages.INFO)
 
     def activate(self, request, queryset):
-        # queryset.update(active=True)
         for i in queryset:
             i.active = True
             i.save()
 
     def deactivate(self, request, queryset):
-        # queryset.update(active=False)
         for i in queryset:
             i.active = False
             i.save()
 
-    activate.short_description = "Activate selected Cron Jobs"
-    deactivate.short_description = "Deactivate selected Cron Jobs"
+    activate.short_description = "Activate selected"
+    deactivate.short_description = "Deactivate selected"
+    create_copy.short_description = "Create copy of selected"
+
 
 
 @admin.decorators.register(models.CronJobLog)
 class CronJobLogAdmin(admin.ModelAdmin):
     list_display = [x.name for x in models.CronJobLog._meta.fields if x.name not in ['id', 'log_data']]
     
+
+@admin.decorators.register(models.Notification)
+class NotificationAdmin(admin.ModelAdmin):
+    list_display = [x.name for x in models.Notification._meta.fields if x.name not in ['id', 'auth_password', 'tls', 'ssl', 'auth_user']]
+    # form = NotificationForm
+    actions = ["create_copy"]
+
+    def create_copy(self, request, queryset):
+        for i in queryset:
+            i.pk = None
+            i.subject = f"copy of {i.subject}"
+            i.active = False
+            i.save()
+            self.message_user(request, f"{i.subject} created", messages.INFO)
+
+    create_copy.short_description = "Create copy of selected"
+

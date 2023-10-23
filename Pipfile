@@ -8,7 +8,9 @@ django = "==4.2.6"
 boto3 = "*"
 django-extensions = "*"
 python-crontab = "*"
-django-modeladmin-reorder = "*"
+django-dotenv = "*"
+psycopg2-binary = "*"
+gunicorn = "*"
 
 [dev-packages]
 
