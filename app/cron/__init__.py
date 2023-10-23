@@ -51,3 +51,6 @@ def config():
     for cron_job in CronJob.objects.all():
         create_cronjob(cron_job)
 
+
+def run():
+    config()

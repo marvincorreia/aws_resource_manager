@@ -8,11 +8,10 @@ RUN pipenv install --system --deploy
 
 FROM build as dev
 WORKDIR /app
-CMD service cron start && python manage.py runserver 0.0.0.0:8000
+CMD service cron start && python manage.py runscript app.cron && python manage.py runserver 0.0.0.0:8000
 
 FROM build as prod
 WORKDIR /app
 COPY . .
-# RUN python manage.py collectstatic --noinput
-CMD service cron start && python manage.py collectstatic --noinput 
-# && python manage.py migrate --noinput && gunicorn aws_management.wsgi --bind 0.0.0.0:8000
+RUN python manage.py collectstatic --noinput
+CMD service cron start && python manage.py migrate --noinput && python manage.py runscript app.cron && gunicorn aws_management.wsgi --bind 0.0.0.0:8000
