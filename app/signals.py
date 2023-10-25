@@ -3,7 +3,7 @@ from django.dispatch import receiver
 from django.contrib import messages
 from . import models
 from .cron import create_cronjob, delete_cronjob
-from app.awsdk import get_aws_ec2_instances, get_aws_rds_instances
+from .awsdk import get_aws_ec2_instances, get_aws_rds_instances
 
 
 @receiver(post_save, sender=models.CronJob)

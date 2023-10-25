@@ -20,7 +20,7 @@ def get_aws_ec2_instances(aws_account: models.AWSAccount):
             instance_state = instance['State']['Name']
             instance_type = instance['InstanceType']
             platform = instance.get('Platform', 'Linux')
-            public_ip = instance.get('PublicIpAddress', 'N/A')
+            public_ip = instance.get('PublicIpAddress', '')
             launch_time = instance['LaunchTime']
             instance_name = ''
 

@@ -11,6 +11,7 @@ python-crontab = "*"
 django-dotenv = "*"
 psycopg2-binary = "*"
 gunicorn = "*"
+whitenoise = "*"
 
 [dev-packages]
 

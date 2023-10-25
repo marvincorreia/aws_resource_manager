@@ -88,9 +88,9 @@ class CronJobAdmin(admin.ModelAdmin):
     list_display = [x.name for x in models.CronJob._meta.fields if x.name not in ['id',]]
     list_filter = ('aws_account',)
     # inlines = [admin_inlines.CronJobLogInline,]
-    actions = ['activate', 'deactivate', 'create_copy']
+    actions = ['activate', 'deactivate', 'duplicate']
 
-    def create_copy(self, request, queryset):
+    def duplicate(self, request, queryset):
         for i in queryset:
             i.pk = None
             i.name = f"copy of {i.name}"
@@ -110,7 +110,7 @@ class CronJobAdmin(admin.ModelAdmin):
 
     activate.short_description = "Activate selected"
     deactivate.short_description = "Deactivate selected"
-    create_copy.short_description = "Create copy of selected"
+    duplicate.short_description = "Duplicate selected"
 
 
 
@@ -123,9 +123,9 @@ class CronJobLogAdmin(admin.ModelAdmin):
 class NotificationAdmin(admin.ModelAdmin):
     list_display = [x.name for x in models.Notification._meta.fields if x.name not in ['id', 'auth_password', 'tls', 'ssl', 'auth_user']]
     # form = NotificationForm
-    actions = ["create_copy"]
+    actions = ["duplicate"]
 
-    def create_copy(self, request, queryset):
+    def duplicate(self, request, queryset):
         for i in queryset:
             i.pk = None
             i.subject = f"copy of {i.subject}"
@@ -133,5 +133,5 @@ class NotificationAdmin(admin.ModelAdmin):
             i.save()
             self.message_user(request, f"{i.subject} created", messages.INFO)
 
-    create_copy.short_description = "Create copy of selected"
+    duplicate.short_description = "Duplicate selected"
 
