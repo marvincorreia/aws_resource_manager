@@ -1,0 +1,53 @@
+image: docker:stable
+
+stages:
+  - build
+  - deploy
+
+
+build:
+  stage: build
+  image: docker:stable
+  environment: production
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      exists:
+        - Dockerfile
+      when: on_success
+  variables:
+    IMAGE: $CI_REGISTRY_IMAGE
+    TAG: $CI_COMMIT_REF_SLUG
+  script:
+    - docker --version
+    - echo "Image tags - $TAG"
+    - docker build . -t $IMAGE:$TAG
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker image push $IMAGE:$TAG
+  tags:
+    - aws
+
+deploy:
+  stage: deploy
+  image: docker/compose
+  environment: production
+  variables:
+    IMAGE: $CI_REGISTRY_IMAGE
+    TAG: $CI_COMMIT_REF_SLUG
+  script:
+    - echo "$ENV" >> .env.prod
+    - echo .env.prod
+    - docker-compose --version
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker-compose -f docker-compose.prod.yml pull
+    - docker-compose -f docker-compose.prod.yml -p staging-$CI_PROJECT_NAME up -d --no-build
+
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: on_success
+  tags:
+    - aws
+
+
+after_script:
+  - rm .env.prod || true
+
