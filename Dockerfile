@@ -12,7 +12,9 @@ CMD service cron start && env >> /etc/environment && python manage.py runserver 
 
 FROM build as prod
 WORKDIR /app
-COPY . .
+COPY aws_management/ ./aws_management
+COPY app/ ./app
+COPY manage.py ./
 RUN python manage.py collectstatic --noinput
 ENV DEBUG=false
 ENV NUM_WORKERS=3

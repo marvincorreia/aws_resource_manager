@@ -1,2 +1,5 @@
 staticfiles
 .env
+.env.prod
+db.sqlite3
+cron.log
