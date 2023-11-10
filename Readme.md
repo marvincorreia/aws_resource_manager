@@ -53,7 +53,7 @@ version: "3.7"
 
 services:
   aws-resource-manager:
-    image: marvincorreia/aws-resource-manager:1.0.0
+    image: marvincorreia/aws-resource-manager:1.0.0-alpine
     environment:
       - DEBUG=$DEBUG
       - DB_NAME=$DB_NAME
