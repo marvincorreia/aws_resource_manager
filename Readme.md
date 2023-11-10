@@ -1,6 +1,6 @@
 # AWS Resource Manager
 
-- Manage your aws resources from simple UI from your local machine
+- Manage your aws resources from simple UI on your local machine or remote server
 - Setup cronjobs to stop and start EC2 and RDS instances
 - Reduce EC2 and RDS usage cost
 
