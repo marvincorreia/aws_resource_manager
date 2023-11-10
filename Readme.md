@@ -82,8 +82,12 @@ services:
 volumes:
   pgdata:
 ```
-
 The app will be available on http://localhost:8000
+
+## Generate superuser
+```sh
+docker-compose exec -e DJANGO_SUPERUSER_PASSWORD="my_strong_pass" aws-resource-manager python manage.py createsuperuser --username=admin --no-input
+```
 
 # User Interface
 ![](docs/images/ui.png)
