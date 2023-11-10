@@ -9,6 +9,7 @@ ACTIONS = (
     ('down', 'DOWN'),
 )
 
+DOWN_STATES_PREFIX = ("stop", "terminat", "shutting", "error", "hibernat", "schedul", "delet", "fail")
 
 class AWSAccount(models.Model):
     name = models.CharField(max_length=20, unique=True)
@@ -50,7 +51,7 @@ class EC2Instance(models.Model):
         return reverse("_detail", kwargs={"pk": self.pk})
     
     def up(self):
-        return not self.instance_state.lower().startswith('stop')
+        return not self.instance_state.lower().startswith(DOWN_STATES_PREFIX)
     
     up.boolean = True
 
@@ -77,7 +78,7 @@ class RDSInstance(models.Model):
         return reverse("_detail", kwargs={"pk": self.pk})
     
     def up(self):
-        return not self.db_status.lower().startswith('stop')
+        return not self.db_status.lower().startswith(DOWN_STATES_PREFIX)
     
     up.boolean = True
 
