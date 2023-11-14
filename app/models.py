@@ -107,7 +107,7 @@ class CronJob(models.Model):
 
 class CronJobLog(models.Model):
     time = models.DateTimeField(default=timezone.now)
-    description = models.CharField(max_length=200, default="")
+    description = models.TextField(default="")
     log_data = models.TextField()
     cronjob = models.ForeignKey(CronJob, on_delete=models.CASCADE)
     success = models.BooleanField(default=True)
